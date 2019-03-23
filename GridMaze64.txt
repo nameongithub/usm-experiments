@@ -1,0 +1,144 @@
+#actionList=
+		WAIT,0;LEFT,1;RIGHT,2;UP,3;DOWN,4
+ENDA
+#observationList=
+		NO_WALL,0;L_WALL,1;R_WALL,2;U_WALL,4;D_WALL,8;LR_WALL,3;LU_WALL,5;LD_WALL,9;RU_WALL,6;
+		RD_WALL,10;UD_WALL,12;LRU_WALL,7;LRD_WALL,11;LUD_WALL,13;RUD_WALL,14;LRUD_WALL,15
+ENDO
+#range=
+		X,8;Y,8
+		
+ENDR
+#cellList=
+		0,0,0,1,LRU_WALL,0;
+
+		1,0,0,1,LU_WALL,0;
+
+		2,0,0,1,UD_WALL,0;
+
+		3,0,0,1,RUD_WALL,0;
+
+		4,0,0,1,LU_WALL,0;
+
+		5,0,0,1,UD_WALL,0;
+
+		6,0,0,1,U_WALL,0;
+
+		7,0,0,1,RUD_WALL,0;
+
+		0,1,0,1,L_WALL,0;
+
+		1,1,0,1,NO_WALL,0;
+
+		2,1,0,1,UD_WALL,0;
+
+		3,1,0,1,UD_WALL,0;
+
+		4,1,0,1,D_WALL,0;
+
+		5,1,0,1,RUD_WALL,0;
+
+		6,1,0,1,LD_WALL,0;
+
+		7,1,0,1,RU_WALL,0;
+
+		0,2,0,1,LRD_WALL,0;
+
+		1,2,0,1,L_WALL,0;
+
+		2,2,0,1,U_WALL,0;
+
+		3,2,0,1,U_WALL,0;
+
+		4,2,0,1,UD_WALL,0;
+
+		5,2,0,1,UD_WALL,0;
+
+		6,2,0,1,RU_WALL,0;
+
+		7,2,0,1,LRD_WALL,0;
+
+		0,3,0,1,LU_WALL,0;
+
+		1,3,0,1,R_WALL,0;
+
+		2,3,0,1,LR_WALL,0;
+
+		3,3,0,1,LD_WALL,0;
+
+		4,3,0,1,U_WALL,0;
+
+		5,3,0,1,RU_WALL,0;
+
+		6,3,0,1,L_WALL,0;
+
+		7,3,0,1,RUD_WALL,0;
+
+		0,4,0,1,LRD_WALL,0;
+
+		1,4,0,1,LR_WALL,0;
+
+		2,4,0,1,L_WALL,0;
+
+		3,4,0,1,RUD_WALL,0;
+
+		4,4,0,1,LR_WALL,0;
+
+		5,4,0,1,LRD_WALL,0;
+
+		6,4,0,1,L_WALL,0;
+
+		7,4,0,1,RUD_WALL,0;
+
+		0,5,0,1,LU_WALL,0;
+
+		1,5,0,1,R_WALL,0;
+
+		2,5,0,1,L_WALL,0;
+
+		3,5,0,1,RU_WALL,0;
+
+		4,5,0,1,LRD_WALL,0;
+
+		5,5,0,1,LUD_WALL,0;
+
+		6,5,0,1,D_WALL,0;
+
+		7,5,0,1,RUD_WALL,0;
+
+		0,6,0,1,LRD_WALL,0;
+
+		1,6,0,1,LRD_WALL,0;
+
+		2,6,0,1,LR_WALL,0;
+
+		3,6,0,1,L_WALL,0;
+
+		4,6,0,1,UD_WALL,0;
+
+		5,6,0,1,UD_WALL,0;
+
+		6,6,0,1,UD_WALL,0;
+
+		7,6,0,1,RUD_WALL,0;
+
+		0,7,1,0,LUD_WALL,0;
+
+		1,7,0,1,UD_WALL,0;
+
+		2,7,0,1,RD_WALL,0;
+
+		3,7,0,1,LD_WALL,0;
+
+		4,7,0,1,UD_WALL,0;
+
+		5,7,0,1,UD_WALL,0;
+
+		6,7,0,1,UD_WALL,0;
+
+		7,7,0,1,RUD_WALL,0;
+ENDC
+#goalBonus=	300
+ENDG
+#stepLoss=	-0.1
+ENDS
