@@ -32,6 +32,8 @@ public class USM implements Algorithm {
 
 	// isTarget表示是否确定唯一的curState，用于抵达goal后的再次学习，此时环境会给随机到一个非goal的cell
 	// isTarget置为false，随后每次makeDecision()都随机选取a执行（不将instance加入tree），直到curState唯一
+	//
+	// 當isTarget為false的時候，表示在新的一趟中，根據實例還無法確定是當前處於哪一個狀態。curState即currentState。故在輸出策略的時候，隨機選擇a執行。並且這個實例不加入到實例樹中去。
 	private boolean isTarget;
 
 	private double GAMMA = 0.9; // 折扣值取0.9
@@ -40,19 +42,24 @@ public class USM implements Algorithm {
 
 	/**
 	 * USM算法类初始化方法，会请求两个int型变量得到O和A集的大小
-	 * 
+	 *
+	 *
 	 * @param observationSize
 	 * @param actionSize
 	 */
 	public USM(int observationSize, int actionSize) {
-		this.observationSize = observationSize;
-		this.actionSize = actionSize;
-		this.suffixTree = new SuffixTree(this.actionSize, this.observationSize);
-		this.instanceList = new ArrayList<Instance>();
-		this.leafList = new ArrayList<TreeNode>();
-		this.leafListInit();
+		this.observationSize = observationSize; //設置觀察集的大小。
+		this.actionSize = actionSize; //設置動作集的大小。
+		this.suffixTree = new SuffixTree(this.actionSize, this.observationSize); //創建一個後綴樹。
+		this.instanceList = new ArrayList<Instance>(); //創建實例歷史記錄列表。
+		this.leafList = new ArrayList<TreeNode>(); //創建葉節點列表。
+		this.leafListInit(); //初始化葉節點列表。也就是把suffixTree的葉節點引用取出來，放在leafList中。
 		this.qTable = new ArrayList<HashMap<TreeNode, Double>>();
+		//創建出Q值表。
+        //這個ArrayList的元素個數就是actionSize。所以。qtable.get(3).get(treeNode)的意思就是“狀態treeNode,3號動作的Q值。”
 
+
+        //初始化Q值表，全部初始化為0。
 		for (int i = 0; i < actionSize; i++) {
 			TreeNode tn_temp = null;
 			Iterator<TreeNode> titr = leafList.iterator();
@@ -63,6 +70,8 @@ public class USM implements Algorithm {
 			}
 
 		}
+
+
 	}
 
 	/**
@@ -178,7 +187,9 @@ public class USM implements Algorithm {
 	}
 
 	/**
-	 * 抵达终点后开始下一次训练，知道明确当前所处的状态之后才会把实例放入词缀树
+	 * 抵达终点后开始下一次训练，知道明确当前所处的状态之后才会把实例放入词缀树。
+	 * 一次實驗可能會有很多趟開始。每一趟開始的時候輸入開始位置的觀察集合。
+	 * 不理會在該開始位置的收益值，只是記錄為0。
 	 */
 	public void newStart(int newO) {
 		// 随机运行n步，直到可以明确定位curState

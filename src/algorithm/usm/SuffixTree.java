@@ -21,12 +21,14 @@ public class SuffixTree {
 	 */
 	private void buildTree(int actionSize, int observationSize) {
 		this.root = new TreeNode();
+
+		//創建和觀察集合數量相同的葉節點。這是初始化的時候運行的。
 		for (int i = 0; i < observationSize; i++) {
 			TreeNode tn = new TreeNode(this.root, i);
 			// tn.setFringePermit(true);
 			tn.setLeaf(true);
-			tn.buildFringe(tn, FRINGE_DEPTH, actionSize, observationSize);
-			root.sonNode.add(tn);
+			tn.buildFringe(tn, FRINGE_DEPTH, actionSize, observationSize); //建立邊緣節點。
+			root.sonNode.add(tn); //加入到根節點的子節點列表中去。
 		}
 	}
 

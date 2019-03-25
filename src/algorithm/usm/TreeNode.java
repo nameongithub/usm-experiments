@@ -5,14 +5,14 @@ import java.util.Iterator;
 import java.util.List;
 
 public class TreeNode {
-	private int depth;
-	private int index;
-	private boolean isLeaf;
+	private int depth; //這個TreeNode的深度。
+	private int index; //每個節點都有一個唯一的index,作為id。根節點rootNode是-1。
+	private boolean isLeaf; //是否是葉節點。
 	// private boolean fringePermit;
 
-	public List<Instance> instanceList;
-	public List<TreeNode> sonNode;
-	public TreeNode fatherNode;
+	public List<Instance> instanceList; //每個節點都會有一個實例集合。
+	public List<TreeNode> sonNode; //這是這個節點的子節點。
+	public TreeNode fatherNode; //這個節點的父節點。
 
 	/*
 	 * 两种初始化方法，带参数的给子节点用，不带参数的给root用
