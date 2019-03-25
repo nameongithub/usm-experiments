@@ -7,16 +7,16 @@ public interface Algorithm {
 	 * @param actionIndex
 	 * @param reward
 	 */
-	public void generateInstance(int actionIndex, int observationIndex, double reward); //就是向USM輸入一個
+	public void generateInstance(int actionIndex, int observationIndex, double reward); //想USM輸入一個實例。
 
-	public int getStateNum();
+	public int getStateNum(); //獲取USM實時的狀態數量。
 
-	public int makeDecision();
+	public int makeDecision(); //獲取USM的決策動作。
+	public double getADR();  //獲取USM的當前ADR。
 
-	public double getADR();
 
 	// 启动方法，每一个course开始时都会进行,根据newO建立一个末端实例并将isTarget置为false
-	public void newStart(int newO);
+	public void newStart(int newO); //輸入一個開始的實例。
 
 	public void printQvalueTable();
 }
