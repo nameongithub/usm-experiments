@@ -74,45 +74,32 @@ public class USM implements Algorithm {
 
 	}
 
+
 	/**
-	 * 根据执行结果生成instance
+	 * 叶节点集合，也就是状态集合的初始化
 	 */
-	public void generateInstance(int actionIndex, int observationIndex, double reward) {
-		Instance last = null;
-
-		//其實如果USM第一步必須要執行newStart的話。那麼instanceList一定不會為空的。
-		if (instanceList.size() != 0) {
-			last = instanceList.get(instanceList.size() - 1);
-		}
-		Instance in = new Instance(last, actionIndex, observationIndex, reward);
-		last.setNextInstance(in);
-		instanceList.add(in);
-		curState = instanceMatching(in);//根據instance的歷史匹配，找到唯一對應的leaf。
-		// System.out.println("current state: " + this.getLeafName(curState));
-		if (curState == null) {//如果沒有找到
-			isTarget = false;
-			// System.out.println("***********************************error1");
-		}
-		if (this.isTarget == true) {//
-			if (curState != null) {
-				instancePutting(in, curState);
-			}
-
-		} else {
-			// 匹配结果不为null且是一个leaf
-			// 如果信息不足，返回的一定是null;此时应当继续尝试
-			if (curState != null && this.leafList.contains(curState)) {
-				// System.out.println("****set isTarget true****");
-				this.isTarget = true;
-			}
+	private void leafListInit() {
+		Iterator<TreeNode> titr = this.suffixTree.root.getSonNodeIteritor();
+		TreeNode tn_temp = null;
+		while (titr.hasNext()) {
+			tn_temp = titr.next();
+			this.leafList.add(tn_temp);
 		}
 	}
 
 	/**
-	 * 运行结束时返回总状态数目
+	 * 抵达终点后开始下一次训练，知道明确当前所处的状态之后才会把实例放入词缀树。
+	 * 一次實驗可能會有很多趟開始。每一趟開始的時候輸入開始位置的觀察集合。
+	 * 不理會在該開始位置的收益值，只是記錄為0。
 	 */
-	public int getStateNum() {
-		return this.leafList.size();
+	public void newStart(int newO) {
+		// 随机运行n步，直到可以明确定位curState
+		this.isTarget = false;
+		// System.out.println("****set isTarget false****");
+		// 构建一个实例加入序列，该实例不计入统计
+		Instance in = new Instance(null, -1, newO, 0);
+		this.instanceList.add(in);
+
 	}
 
 	/**
@@ -162,79 +149,73 @@ public class USM implements Algorithm {
 	}
 
 	/**
-	 * 结束时返回ADR
+	 * 判断一个a是否是合理的；当前不接受相邻两步走回头路 该方法可能是ADR偏低的原因
+	 *
+	 * @param a
+	 * @param o
+	 * @param lastA
+	 * @return
 	 */
-	public double getADR() {
-		// System.out.println("deepest fringe:" + String.valueOf(this.fringeDepth + 1));
-		double sum = 0;
-		for (Instance in : this.instanceList) {
-			if (in.getLastInstance() != null) {
-				sum += this.calDR(in, 0);
-				//sum += in.getReward();
+	private boolean judgeActionAcceptable(int a, int o, int lastA, boolean turnable) {
+		boolean b = true;
+		if (a == 0) {
+			b = false;//不能停留。
+		}
+		if (((a == 1) && (o == 1 || o == 3 || o == 5 || o == 9 || o == 7 || o == 11 || o == 13 || o == 15))
+				|| ((a == 2) && (o == 2 || o == 3 || o == 6 || o == 10 || o == 7 || o == 11 || o == 14 || o == 15))
+				|| ((a == 3) && (o == 4 || o == 5 || o == 6 || o == 12 || o == 7 || o == 13 || o == 14 || o == 15))
+				|| ((a == 4) && (o == 8 || o == 9 || o == 10 || o == 12 || o == 11 || o == 13 || o == 14 || o == 15))) {
+			b = false;//不能撞牆。
+		} else if (o != 7 && o != 11 && o != 13 && o != 14 && !turnable) {//如果規定不能走回頭路，並且不是死胡同
+			if ((a == 1 && lastA == 2) || (a == 2 && lastA == 1) || (a == 4 && lastA == 3) || (a == 3 && lastA == 4)) {
+				b = false;//則不走回頭路。
 			}
 		}
-		return sum / this.instanceList.size();
+		return b;
 	}
 
-	public double calDR(Instance in, int depth) {
-		if (in.getReward() > 0 || depth == 20) {
-			return in.getReward();
-		} else if (in.getNextInstance() == null) {
-			return in.getReward();
-		} else {
-			return in.getReward() + this.GAMMA * calDR(in.getNextInstance(), depth + 1);
+
+	/**
+	 * 根据执行结果生成instance
+	 */
+	public void generateInstance(int actionIndex, int observationIndex, double reward) {
+		Instance last = null;
+
+		//其實如果USM第一步必須要執行newStart的話。那麼instanceList一定不會為空的。
+		if (instanceList.size() != 0) {
+			last = instanceList.get(instanceList.size() - 1);
 		}
+		Instance in = new Instance(last, actionIndex, observationIndex, reward);
+		last.setNextInstance(in);
+		instanceList.add(in);
+		curState = instanceMatching(in);//根據instance的歷史匹配，找到唯一對應的leaf。
+		// System.out.println("current state: " + this.getLeafName(curState));
 
-	}
 
-	/**
-	 * 抵达终点后开始下一次训练，知道明确当前所处的状态之后才会把实例放入词缀树。
-	 * 一次實驗可能會有很多趟開始。每一趟開始的時候輸入開始位置的觀察集合。
-	 * 不理會在該開始位置的收益值，只是記錄為0。
-	 */
-	public void newStart(int newO) {
-		// 随机运行n步，直到可以明确定位curState
-		this.isTarget = false;
-		// System.out.println("****set isTarget false****");
-		// 构建一个实例加入序列，该实例不计入统计
-		Instance in = new Instance(null, -1, newO, 0);
-		this.instanceList.add(in);
-
-	}
-
-	/**
-	 * 叶节点集合，也就是状态集合的初始化
-	 */
-	private void leafListInit() {
-		Iterator<TreeNode> titr = this.suffixTree.root.getSonNodeIteritor();
-		TreeNode tn_temp = null;
-		while (titr.hasNext()) {
-			tn_temp = titr.next();
-			this.leafList.add(tn_temp);
+		/**
+		 * 一下幾行代碼組織較為混亂。基本意思如下：
+		 * 如果current state==null,isTarget==false 則 do nothing.
+		 * 如果current state==null, isTarget==true 則 isTarget=false.
+		 * 如果current state!=null, isTarget==false,則 isTarget=true.
+		 * 如果current state!=null, isTarget==true, 則 加入節點的實例集合中去。
+		 *
+		 *
+		 *
+		 */
+		if (curState == null) {//如果沒有找到
+			isTarget = false; //設置isTarget，當前沒有找到current state。
+			// System.out.println("***********************************error1");
 		}
-	}
+		if (this.isTarget) {//
+			instancePutting(in, curState);
 
-	/**
-	 * 放入instance的方法,随后会进行一次Q值更新和一次边缘结点检查
-	 * 
-	 * @param in
-	 * @param tn
-	 */
-	private void instancePutting(Instance in, TreeNode tn) {
-		if (tn.isLeaf()) {
-			tn.getInstanceList().add(in);
-			// System.out.println("put into: " + this.getLeafName(curState));
-			updateQ();
-			this.matchingTest();
-			// if (checkFringe(tn)) {
-			// curState = this.instanceMatching(in);
-			// if (curState == null) {
-			// isTarget = false;
-			// // System.out.println("*******************************error");
-			// }
-			// }
 		} else {
-			System.out.println("instancePutting error!");
+			// 匹配结果不为null且是一个leaf
+			// 如果信息不足，返回的一定是null;此时应当继续尝试
+			if (curState != null && this.leafList.contains(curState)) {
+				// System.out.println("****set isTarget true****");
+				this.isTarget = true;
+			}
 		}
 	}
 
@@ -274,11 +255,186 @@ public class USM implements Algorithm {
 			}
 			time++;
 			if (time > 15) {
+				//这里的意思是如果連續匹配成功達到15層但是沒有匹配到葉節點，則放棄繼續匹配。
 				// System.out.println("pause");
 				return null;
 			}
 		}
 	}
+
+	/**
+	 * 放入instance的方法,随后会进行一次Q值更新和一次边缘结点检查
+	 *
+	 * @param in
+	 * @param tn
+	 */
+	private void instancePutting(Instance in, TreeNode tn) {
+		if (tn.isLeaf()) {
+			tn.getInstanceList().add(in);
+			// System.out.println("put into: " + this.getLeafName(curState));
+			updateQ();
+			this.matchingTest();
+			// if (checkFringe(tn)) {
+			// curState = this.instanceMatching(in);
+			// if (curState == null) {
+			// isTarget = false;
+			// // System.out.println("*******************************error");
+			// }
+			// }
+		} else {
+			System.out.println("instancePutting error!");
+		}
+	}
+
+	/**
+	 * 更新所有状态的Qvalue的方法
+	 */
+	private void updateQ() {
+		List<HashMap<TreeNode, Double>> qTable1 = new ArrayList<HashMap<TreeNode, Double>>(); //這張是臨時的Q值表。也就是更新後的Q值表。
+		for (int i = 0; i < actionSize; i++) {
+			qTable1.add(new HashMap<TreeNode, Double>());
+			for (TreeNode tn : leafList) {
+				double newQ = this.calR(i, tn); //newQ是在狀態tn執行動作i的立即收益。
+				qTable1.get(i).put(tn, newQ + GAMMA * calTran(i, tn));//calTran是狀態tn執行動作i之後，之後採取最優策略的總收益。Pr(s'|s,a)*U(s')
+			}
+		}
+		this.qTable = qTable1;
+	}
+
+	/**
+	 * 计算立即收益R(s，a)的方法
+	 * R表示Immediate Reward，也就是立即收益。
+	 * 完完全全根據論文中的公式來的。
+	 * @param actionIndex
+	 * @param leaf
+	 * @return
+	 */
+	private double calR(int actionIndex, TreeNode leaf) {
+		int num = 0;
+		double rewardSum = 0;
+		Instance in_temp;
+		Iterator<Instance> intr = leaf.instanceList.iterator();
+		while (intr.hasNext()) {
+			in_temp = intr.next();
+			if (in_temp.getNextInstance() != null && in_temp.getNextInstance().getAction() == actionIndex) {
+				num++;
+				rewardSum += in_temp.getNextInstance().getReward();
+			}
+		}
+		if (num == 0)//一切不可計算的之處，都賦零。
+			return 0.0;
+		return rewardSum / num;
+	}
+
+	/**
+	 * 计算转移收益和sum(p*U)的方法
+	 * calTran是狀態tn執行動作i之後，之後採取最優策略的總收益。不包括執行動作tn的立即收益。
+	 * @param actionIndex
+	 * @param leaf
+	 * @return
+	 */
+	private double calTran(int actionIndex, TreeNode leaf) {
+		int num = 0;
+		double rewardSum = 0;
+		Instance in_temp;
+		Iterator<Instance> intr = leaf.instanceList.iterator();
+		while (intr.hasNext()) {
+			in_temp = intr.next();
+			if (in_temp.getNextInstance() != null && in_temp.getNextInstance().getAction() == actionIndex) {
+				num++;
+				rewardSum += calU(instanceMatching(in_temp.getNextInstance()));
+			}
+		}
+		if (num == 0)
+			return 0.0;//一切不可計算的之處，都賦零。
+		return rewardSum / num;
+
+	}
+
+
+	/**
+	 * 获取某个状态下的U的方法
+	 * U就是Utility Of State。也就是內部狀態的效用。
+	 *
+	 * @param leaf
+	 * @return
+	 */
+	private double calU(TreeNode leaf) {
+		if (leaf == null)
+			return 0;
+		double U = 0.0;
+		for (int i = 0; i < actionSize; i++) {
+
+			if (qTable.get(i).containsKey(leaf))
+				U = Math.max(U, qTable.get(i).get(leaf));
+			else {
+				U = Math.max(U, qTable.get(i).get(leaf.fatherNode));
+			}
+
+			/**
+			 * 對於上面這個if的理解。在运行if的时候，leafList已经是最新的狀態的集合了。但此時qTable可能還未來得及更新。
+			 * 所以qTable可能不會有最新的狀態。但是最新的狀態的父親一定在qTable中。因此使用該狀態的父親的值。
+			 */
+		}
+		return U;
+	}
+
+
+	//
+	private void matchingTest() {
+		for (TreeNode tn : this.leafList) {
+			for (Instance in : tn.instanceList) {
+				Instance in_his = this.historyMatching(tn, in);
+				if (in_his == null) {
+					System.out.println("pause!error!");
+					System.out.println(this.getLeafName(tn));
+				}
+			}
+		}
+	}
+
+
+	/**
+	 * 运行结束时返回总状态数目
+	 */
+	public int getStateNum() {
+		return this.leafList.size();
+	}
+
+
+
+	/**
+	 * 结束时返回ADR
+	 */
+	public double getADR() {
+		// System.out.println("deepest fringe:" + String.valueOf(this.fringeDepth + 1));
+		double sum = 0;
+		for (Instance in : this.instanceList) {
+			if (in.getLastInstance() != null) {
+				sum += this.calDR(in, 0);
+				//sum += in.getReward();
+			}
+		}
+		return sum / this.instanceList.size();
+	}
+
+	public double calDR(Instance in, int depth) {
+		if (in.getReward() > 0 || depth == 20) {
+			return in.getReward();
+		} else if (in.getNextInstance() == null) {
+			return in.getReward();
+		} else {
+			return in.getReward() + this.GAMMA * calDR(in.getNextInstance(), depth + 1);
+		}
+
+	}
+
+
+
+
+
+
+
 
 	/**
 	 * 已知in在历史上经过tn leaf，从实例集中找到那段历史
@@ -336,90 +492,11 @@ public class USM implements Algorithm {
 		}
 	}
 
-	/**
-	 * 更新所有状态的Qvalue的方法
-	 */
-	private void updateQ() {
-		List<HashMap<TreeNode, Double>> qTable1 = new ArrayList<HashMap<TreeNode, Double>>();
-		for (int i = 0; i < actionSize; i++) {
-			qTable1.add(new HashMap<TreeNode, Double>());
-			for (TreeNode tn : leafList) {
-				double newQ = this.calR(i, tn);
-				qTable1.get(i).put(tn, newQ + GAMMA * calTran(i, tn));
-			}
-		}
-		this.qTable = qTable1;
-	}
 
-	/**
-	 * 获取某个状态下的U的方法
-	 * U就是Utility Of State。也就是內部狀態的效用。
-	 * 
-	 * @param leaf
-	 * @return
-	 */
-	private double calU(TreeNode leaf) {
-		if (leaf == null)
-			return 0;
-		double U = 0.0;
-		for (int i = 0; i < actionSize; i++) {
-			if (qTable.get(i).containsKey(leaf) == true)
-				U = Math.max(U, qTable.get(i).get(leaf));
-			else {
-				U = Math.max(U, qTable.get(i).get(leaf.fatherNode));
-			}
-		}
-		return U;
-	}
 
-	/**
-	 * 计算转移收益和sum(p*U)的方法
-	 * 
-	 * @param actionIndex
-	 * @param leaf
-	 * @return
-	 */
-	private double calTran(int actionIndex, TreeNode leaf) {
-		int num = 0;
-		double rewardSum = 0;
-		Instance in_temp;
-		Iterator<Instance> intr = leaf.instanceList.iterator();
-		while (intr.hasNext()) {
-			in_temp = intr.next();
-			if (in_temp.getNextInstance() != null && in_temp.getNextInstance().getAction() == actionIndex) {
-				num++;
-				rewardSum += calU(instanceMatching(in_temp.getNextInstance()));
-			}
-		}
-		if (num == 0)
-			return 0.0;
-		return rewardSum / num;
 
-	}
 
-	/**
-	 * 计算立即收益R(s，a)的方法
-	 * R表示Immediate Reward，也就是立即收益。
-	 * @param actionIndex
-	 * @param leaf
-	 * @return
-	 */
-	private double calR(int actionIndex, TreeNode leaf) {
-		int num = 0;
-		double rewardSum = 0;
-		Instance in_temp;
-		Iterator<Instance> intr = leaf.instanceList.iterator();
-		while (intr.hasNext()) {
-			in_temp = intr.next();
-			if (in_temp.getNextInstance() != null && in_temp.getNextInstance().getAction() == actionIndex) {
-				num++;
-				rewardSum += in_temp.getNextInstance().getReward();
-			}
-		}
-		if (num == 0)
-			return 0.0;
-		return rewardSum / num;
-	}
+
 
 	/**
 	 * 统计一个节点下实例的qvalue值
@@ -564,41 +641,6 @@ public class USM implements Algorithm {
 		return str;
 	}
 
-	/**
-	 * 判断一个a是否是合理的；当前不接受相邻两步走回头路 该方法可能是ADR偏低的原因
-	 * 
-	 * @param a
-	 * @param o
-	 * @param lastA
-	 * @return
-	 */
-	private boolean judgeActionAcceptable(int a, int o, int lastA, boolean turnable) {
-		boolean b = true;
-		if (a == 0) {
-			b = false;//不能停留。
-		}
-		if (((a == 1) && (o == 1 || o == 3 || o == 5 || o == 9 || o == 7 || o == 11 || o == 13 || o == 15))
-				|| ((a == 2) && (o == 2 || o == 3 || o == 6 || o == 10 || o == 7 || o == 11 || o == 14 || o == 15))
-				|| ((a == 3) && (o == 4 || o == 5 || o == 6 || o == 12 || o == 7 || o == 13 || o == 14 || o == 15))
-				|| ((a == 4) && (o == 8 || o == 9 || o == 10 || o == 12 || o == 11 || o == 13 || o == 14 || o == 15))) {
-			b = false;//不能撞牆。
-		} else if (o != 7 && o != 11 && o != 13 && o != 14 && !turnable) {//如果規定不能走回頭路，並且不是死胡同
-			if ((a == 1 && lastA == 2) || (a == 2 && lastA == 1) || (a == 4 && lastA == 3) || (a == 3 && lastA == 4)) {
-				b = false;//則不走回頭路。
-			}
-		}
-		return b;
-	}
 
-	private void matchingTest() {
-		for (TreeNode tn : this.leafList) {
-			for (Instance in : tn.instanceList) {
-				Instance in_his = this.historyMatching(tn, in);
-				if (in_his == null) {
-					System.out.println("pause!error!");
-					System.out.println(this.getLeafName(tn));
-				}
-			}
-		}
-	}
+
 }
