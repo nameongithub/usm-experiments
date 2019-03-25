@@ -79,20 +79,21 @@ public class USM implements Algorithm {
 	 */
 	public void generateInstance(int actionIndex, int observationIndex, double reward) {
 		Instance last = null;
-		// curState已经唯一
+
+		//其實如果USM第一步必須要執行newStart的話。那麼instanceList一定不會為空的。
 		if (instanceList.size() != 0) {
 			last = instanceList.get(instanceList.size() - 1);
 		}
 		Instance in = new Instance(last, actionIndex, observationIndex, reward);
 		last.setNextInstance(in);
 		instanceList.add(in);
-		curState = instanceMatching(in);
+		curState = instanceMatching(in);//根據instance的歷史匹配，找到唯一對應的leaf。
 		// System.out.println("current state: " + this.getLeafName(curState));
-		if (curState == null) {
+		if (curState == null) {//如果沒有找到
 			isTarget = false;
 			// System.out.println("***********************************error1");
 		}
-		if (this.isTarget == true) {
+		if (this.isTarget == true) {//
 			if (curState != null) {
 				instancePutting(in, curState);
 			}
@@ -121,15 +122,15 @@ public class USM implements Algorithm {
 		// 学习选取动作的时候不选择WAIT动作，因为会大大降低效率
 		int actionIndex = -1;
 		double rand = Math.random();
-		if (this.isTarget == false || rand < this.EPSILON) {
+		if (this.isTarget == false || rand < this.EPSILON) { //如果rand<EPSILON就隨機探索。或者沒有找到唯一的狀態也隨機探索。
 			// System.out.print("-R:\t");
-			int o = this.instanceList.get(this.instanceList.size() - 1).getObservation();
+			int o = this.instanceList.get(this.instanceList.size() - 1).getObservation();//上一次的觀察值是o。
 			int a = -1;
 			while (true) {
 				a = (int) (Math.random() * actionSize);
 				int lastA = this.instanceList.isEmpty() ? -1
-						: this.instanceList.get(this.instanceList.size() - 1).getAction();
-				// 和上一步相反的动作不能选,不走回头路
+						: this.instanceList.get(this.instanceList.size() - 1).getAction();//lastA是上一次的動作。
+				// 和上一步相反的动作不能选,不走回头路//TURNABLE=false表示不走回頭路。測試a能否可以走。
 				if (!this.judgeActionAcceptable(a, o, lastA, false)) {
 					continue;
 				} else {
@@ -239,32 +240,32 @@ public class USM implements Algorithm {
 
 	/**
 	 * instance的词缀树结点匹配算法,根据instance找到对应的leaf
-	 * 
+	 * 根據instance的歷史匹配，找到唯一對應的leaf節點。如果沒有找到就返回null。
 	 * @param in
 	 */
 	private TreeNode instanceMatching(Instance in) {
 		int time = 0;
 		Instance in_temp = in;
 		TreeNode tn_temp = this.suffixTree.root;
-		int depth = 1;
-		int index = -1;
-		while (true) {
+		int depth = 1;//表示當前嘗試匹配的層數。
+		int index ;
+		while (true) {//每次
 			if (depth % 2 == 0) {
 				index = in_temp.getAction();
 			} else {
 				index = in_temp.getObservation();
 			}
 			for (TreeNode tn : tn_temp.sonNode) {
-				if (tn.getIndex() == index) {
+				if (tn.getIndex() == index) {//在第depth層匹配成功。
 					if (tn.isLeaf()) {
-						return tn;
-					} else {
+						return tn;//如果是葉節點就返回。
+					} else {//如果不是葉節點，就繼續匹配。
 						tn_temp = tn;
-						if (depth % 2 == 0) {
+						if (depth % 2 == 0) {//如果當前是匹配的是動作值，則下一次匹配就需要上一個實例。如果是觀察值，則下一次匹配就不需要更換實例。
 							if (in_temp.getLastInstance() != null) {
 								in_temp = in_temp.getLastInstance();
 							} else {
-								return null;
+								return null;//本趟歷史不夠長。不能再繼續匹配。返回。
 							}
 						}
 						depth++;
@@ -352,6 +353,7 @@ public class USM implements Algorithm {
 
 	/**
 	 * 获取某个状态下的U的方法
+	 * U就是Utility Of State。也就是內部狀態的效用。
 	 * 
 	 * @param leaf
 	 * @return
@@ -397,7 +399,7 @@ public class USM implements Algorithm {
 
 	/**
 	 * 计算立即收益R(s，a)的方法
-	 * 
+	 * R表示Immediate Reward，也就是立即收益。
 	 * @param actionIndex
 	 * @param leaf
 	 * @return
@@ -573,16 +575,16 @@ public class USM implements Algorithm {
 	private boolean judgeActionAcceptable(int a, int o, int lastA, boolean turnable) {
 		boolean b = true;
 		if (a == 0) {
-			b = false;
+			b = false;//不能停留。
 		}
 		if (((a == 1) && (o == 1 || o == 3 || o == 5 || o == 9 || o == 7 || o == 11 || o == 13 || o == 15))
 				|| ((a == 2) && (o == 2 || o == 3 || o == 6 || o == 10 || o == 7 || o == 11 || o == 14 || o == 15))
 				|| ((a == 3) && (o == 4 || o == 5 || o == 6 || o == 12 || o == 7 || o == 13 || o == 14 || o == 15))
 				|| ((a == 4) && (o == 8 || o == 9 || o == 10 || o == 12 || o == 11 || o == 13 || o == 14 || o == 15))) {
-			b = false;
-		} else if (o != 7 && o != 11 && o != 13 && o != 14 && !turnable) {
+			b = false;//不能撞牆。
+		} else if (o != 7 && o != 11 && o != 13 && o != 14 && !turnable) {//如果規定不能走回頭路，並且不是死胡同
 			if ((a == 1 && lastA == 2) || (a == 2 && lastA == 1) || (a == 4 && lastA == 3) || (a == 3 && lastA == 4)) {
-				b = false;
+				b = false;//則不走回頭路。
 			}
 		}
 		return b;

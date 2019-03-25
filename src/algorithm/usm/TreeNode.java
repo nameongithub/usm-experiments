@@ -6,7 +6,7 @@ import java.util.List;
 
 public class TreeNode {
 	private int depth; //這個TreeNode的深度。
-	private int index; //每個節點都有一個唯一的index,作為id。根節點rootNode是-1。
+	private int index; //這個INDEX是節點的標籤。比如說index=1表示觀察為1或者動作為1。具體是觀察還是動作要根據depth是基數還是偶數決定。
 	private boolean isLeaf; //是否是葉節點。
 	// private boolean fringePermit;
 
@@ -50,7 +50,7 @@ public class TreeNode {
 			return;
 		if (root.depth == 0)
 			return;
-		if (root.depth % 2 == 1) {
+		if (root.depth % 2 == 1) {//要建立fringe的父親節點屬於觀察集合的層。所以下面的fringe要是動作層。
 			for (int i = 0; i < asz; i++) {
 				TreeNode son = new TreeNode(root, i);
 				root.sonNode.add(son);
